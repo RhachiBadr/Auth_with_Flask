@@ -98,3 +98,25 @@ button:hover {
 #chk:checked ~ .signup label {
     transform: scale(0.6);
 }
+.flashes {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.flash {
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    color: white;
+    font-family: 'Jost', sans-serif;
+}
+
+.flash.success {
+    background-color: #4CAF50;
+}
+
+.flash.error {
+    background-color: #F44336;
+}
