@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeTimedSerializer 
+from flask import session
+
 import yagmail 
 
 app = Flask(__name__)
@@ -88,23 +90,27 @@ def signup():
 # RT verification
 @app.route('/verify/<token>')
 def verify(token):
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    
     try:
-        # Valider le token et récupérer l'e-mail
-        email = serializer.loads(token, salt='email-verification', max_age=3600)  # Token valide pendant 1 heure
+        email = serializer.loads(token, salt='email-verification', max_age=3600)  # Token valide 1 heure
 
-        # Trouver l'utilisateur associé à l'e-mail
         user = User.query.filter_by(email=email).first()
         if user:
-            user.verified = True
-            db.session.commit()
-            flash('Votre adresse e-mail a été vérifiée avec succès.')
+            if not user.verified:
+                user.verified = True  # Marq user as virified
+                db.session.commit()
+
+            session['user_id'] = user.id  
+            flash('Votre adresse e-mail a été vérifiée avec succès. Vous êtes maintenant connecté.')
+            return redirect(url_for('dashboard'))
         else:
             flash('Utilisateur non trouvé.')
     except Exception as e:
         flash('Le lien de vérification est invalide ou a expiré.')
         print(f"Erreur : {e}")
 
-    # Rediriger vers la page d'accueil après vérification
     return redirect(url_for('index'))
 
 # RT for connex
@@ -118,12 +124,30 @@ def login():
         user = User.query.filter_by(email=email, password=password).first()
         if user:
             if user.verified:
+                session['user_id'] = user.id
                 flash('Connexion réussie !')
+                return redirect(url_for('dashboard'))
             else:
                 flash('Veuillez vérifier votre e-mail avant de vous connecter.')
         else:
             flash('E-mail ou mot de passe incorrect.')
         return redirect(url_for('index'))
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        flash('Veuillez vous connecter pour accéder à cette page.')
+        return redirect(url_for('index'))
+    return render_template('index.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None) 
+    flash('Vous êtes déconnecté.')
+    return redirect(url_for('index'))
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
