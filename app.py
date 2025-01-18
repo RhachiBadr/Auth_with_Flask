@@ -10,6 +10,7 @@ app = Flask(__name__)
 # Config Flask
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = '4f5d6e7a8b9c0d1e2f3a4b5c6d7e8f9a'  
+app.secret_key = '4f5d6e7a8b9c0d1e2f3a4b5c6d7e8f9a'
 
 # extension SQLAlchemy
 db = SQLAlchemy(app)
@@ -23,9 +24,7 @@ class User(db.Model):
     password = db.Column(db.String(100), nullable=False)
     verified = db.Column(db.Boolean, default=False)  
 
-# Crée bd
-with app.app_context():
-    db.create_all()
+##la base existe déjà.
 
 def send_verification_email(email, username):
     
@@ -139,15 +138,14 @@ def dashboard():
         return redirect(url_for('index'))
     return render_template('index.html')
 
-@app.route('/logout')
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
-    session.pop('user_id', None) 
-    flash('Vous êtes déconnecté.')
-    return redirect(url_for('index'))
-
-
-
-
+    if request.method == 'POST':
+        session.pop('user_id', None)
+        flash('Vous êtes déconnecté.')
+        return redirect(url_for('index')) #page d'accuel
+    else:
+        return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
